@@ -49,11 +49,11 @@ def simulate_policy(
 
 
 if __name__ == '__main__':
-    this_demand = 3.3
-    this_lead_time = 4
+    this_demand = 2.1
+    this_lead_time = 3
     this_pog = 18
     this_casepack = 10
-    otl = np.ceil(this_pog - this_casepack + this_demand * this_lead_time)
+    otl = np.floor(this_pog - this_casepack + this_demand * this_lead_time)
     more_knots = int(np.floor(otl / this_casepack))
     this_policy = [otl - x * this_casepack for x in range(more_knots + 1)]
     num_sim_days = 10000
@@ -70,6 +70,8 @@ if __name__ == '__main__':
     overflow_boh = [max(0., s["BOH"] / this_pog - 1.) for s in sim_res]
     demands = [s["Demand"] for s in sim_res]
     unmet_demands = [s["Unmet Demand"] for s in sim_res]
+
+    print("OTL = %d" % otl)
 
     mean_holes_eoh = np.mean(holes_eoh)
     stdev_holes_eoh = np.std(holes_eoh)
