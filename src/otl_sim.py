@@ -8,7 +8,7 @@ def get_casepacks_from_policy_and_eip(
     eip: int
 ) -> int:
     try:
-        cp = next(i for i, x in enumerate(pol) if x < eip)
+        cp = next(i for i, x in enumerate(pol) if eip >= x)
     except StopIteration:
         cp = len(pol)
     return cp
@@ -22,6 +22,12 @@ def simulate_policy(
     policy: Sequence[int],
     sim_days: int
 ) -> Sequence[Mapping[str, Any]]:
+    """
+    demand is the mean of a poisson distribution for daily demand
+    policy is descending-sorted sequence [i_0, i_1, ..., i_n].
+    we order k casepacks if k is the smallest index such that
+    Inventory Position >= i_k
+    """
 
     all_demands = poisson(demand).rvs(sim_days)
     sim = []
@@ -49,13 +55,20 @@ def simulate_policy(
 
 
 if __name__ == '__main__':
-    this_demand = 2.1
-    this_lead_time = 3
-    this_pog = 18
-    this_casepack = 10
-    otl = np.floor(this_pog - this_casepack + this_demand * this_lead_time)
+    this_demand = 0.12
+    this_lead_time = 4
+    this_pog = 4
+    this_casepack = 8
+
+    this_alpha = 0.5
+    this_beta = 0.95
+
+    poisson_mean = this_demand * (this_lead_time + 1)
+    poisson_dist = poisson(poisson_mean)
+    otl = np.ceil(this_alpha * this_pog + poisson_dist.ppf(this_beta))
     more_knots = int(np.floor(otl / this_casepack))
     this_policy = [otl - x * this_casepack for x in range(more_knots + 1)]
+
     num_sim_days = 10000
     sim_res = simulate_policy(
         demand=this_demand,
@@ -76,7 +89,7 @@ if __name__ == '__main__':
     mean_holes_eoh = np.mean(holes_eoh)
     stdev_holes_eoh = np.std(holes_eoh)
     print("Mean Holes EOH = %.1f%%, Stdev Holes EOH = %.1f%%" %
-          (mean_holes_eoh * 100 , stdev_holes_eoh * 100))
+          (mean_holes_eoh * 100, stdev_holes_eoh * 100))
 
     mean_overflow_boh = np.mean(overflow_boh)
     stdev_overflow_boh = np.std(overflow_boh)
